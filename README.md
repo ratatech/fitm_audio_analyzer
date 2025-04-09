@@ -1,6 +1,6 @@
 # FITM Audio Feature Analyzer
 
-This project is a Python-based tool for analyzing audio files and extracting detailed audio features. It uses an external executable to process audio files and generates a YAML file containing the extracted features. The tool also includes functionality to parse the YAML file and visualize specific features using Python.
+This project is a Python-based tool for analyzing audio files and extracting detailed audio features. It uses the **Essentia Streaming Extractor Music** tool to process audio files and generates a YAML file containing the extracted features. The tool also includes functionality to parse the YAML file and visualize specific features using Python.
 
 ## Features
 - **Audio Feature Extraction**: Extracts low-level, rhythm, tonal, and other audio features from audio files.
@@ -23,7 +23,7 @@ pip install pyyaml matplotlib
 
 ### 1. Prepare the Environment
 - Place the audio files you want to analyze in the `samples/` directory.
-- Ensure the external executable (e.g., `streaming_extractor_music.exe`) is located in the `bin/` directory.
+- Ensure the external executable (`streaming_extractor_music.exe`) is located in the `bin/` directory. This tool is part of the [Essentia Streaming Extractor Music](https://essentia.upf.edu/streaming_extractor_music.html#music-descriptors) package.
 
 ### 2. Run the Script
 Use the following command to analyze an audio file and extract features:
@@ -49,6 +49,9 @@ python audio_analyzer.py
 - **Real-Time Output**: The script streams the output of the external executable in real-time.
 - **Parsed Data**: The parsed YAML data is printed to the console.
 - **Visualization**: A bar chart of `lowlevel.mean` values is displayed.
+
+## Reference
+This project uses the [Essentia Streaming Extractor Music](https://essentia.upf.edu/streaming_extractor_music.html#music-descriptors) tool, which is part of the [Essentia](https://essentia.upf.edu/) library developed by the Music Technology Group at Universitat Pompeu Fabra, Barcelona. Essentia is an open-source library for audio analysis and audio-based music information retrieval.
 
 ## Directory Structure
 ```
