@@ -1,0 +1,30 @@
+startTime: 0
+endTime: 2
+outputFormat: yaml
+lowlevel:
+    frameSize: 2048
+    hopSize: 1024
+    zeroPadding: 0
+    windowType: blackmanharris62
+    silentFrames: noise
+    stats: ["mean", "var", "median"]
+
+average_loudness:
+    frameSize: 88200
+    hopSize: 44100
+    windowType: hann
+    silentFrames: noise
+
+rhythm:
+    method: degara
+    minTempo: 40
+    maxTempo: 208
+    stats: ["mean", "var", "median", "min", "max"]
+
+tonal:
+    frameSize: 4096
+    hopSize: 2048
+    zeroPadding: 0
+    windowType: blackmanharris62
+    silentFrames: noise
+    stats: ["mean", "var", "median", "min", "max"]
