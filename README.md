@@ -1,4 +1,4 @@
-# Audio Feature Analyzer
+# FITM Audio Feature Analyzer
 
 This project is a Python-based tool for analyzing audio files and extracting detailed audio features. It uses an external executable to process audio files and generates a YAML file containing the extracted features. The tool also includes functionality to parse the YAML file and visualize specific features using Python.
 
