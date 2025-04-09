@@ -1,5 +1,5 @@
 startTime: 0
-endTime: 2
+endTime: 120
 outputFormat: yaml
 lowlevel:
     frameSize: 2048

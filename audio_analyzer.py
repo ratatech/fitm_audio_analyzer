@@ -1,6 +1,7 @@
 import subprocess
 import os
 import yaml  # Import PyYAML for parsing YAML files
+import matplotlib.pyplot as plt
 
 def call_executable_with_args(executable_name, *args):
     """
@@ -81,24 +82,52 @@ def parse_yaml_to_dict(yaml_file_path):
     except Exception as e:
         raise RuntimeError(f"Failed to parse YAML file '{yaml_file_path}': {e}")
 
+def plot_lowlevel_means(data):
+    """
+    Plots the 'mean' values from the 'lowlevel' field in the parsed YAML data.
+
+    :param data: Parsed YAML data as a dictionary.
+    """
+    if "lowlevel" not in data:
+        raise KeyError("The 'lowlevel' field is missing in the YAML data.")
+
+    lowlevel_data = data["lowlevel"]
+    means = {}
+    
+    # Extract 'mean' values from the 'lowlevel' subfields
+    for key, value in lowlevel_data.items():
+        if isinstance(value, dict) and "mean" in value:
+            means[key] = value["mean"]
+
+    # Plot the extracted 'mean' values
+    plt.figure(figsize=(10, 6))
+    plt.bar(means.keys(), means.values(), color='skyblue')
+    plt.xticks(rotation=45, ha='right', fontsize=10)
+    plt.ylabel("Mean Values")
+    plt.title("Lowlevel Features - Mean Values")
+    plt.tight_layout()
+    plt.show()
+
 # Example usage
 if __name__ == "__main__":
     try:
-        bin = "streaming_extractor_music.exe"
-        arg1 = "samples/fetus.wav"
-        arg2 = "out/data_raw.yml"  # Ensure the output file has the correct path and extension
-        arg3 = "profile.yml"
+        samples = os.listdir("samples/")  # List files in the 'bin/' directory
+        
+        for sample in samples:
+            bin = "streaming_extractor_music.exe"
+            arg1 = "samples/" + sample
+            arg2 = "out/data_" + sample.split(".wav")[0] + "_raw.yml"  # Ensure the output file has the correct path and extension
+            arg3 = "profile.yml"
 
-        # Call the executable
-        call_executable_with_args_realtime(bin, arg1, arg2, arg3)
+            # Call the executable
+            call_executable_with_args_realtime(bin, arg1, arg2, arg3)
 
-        # Parse the output YAML file
-        yaml_file_path = arg2
-        parsed_data = parse_yaml_to_dict(yaml_file_path)
+            # Parse the output YAML file
+            yaml_file_path = arg2
+            parsed_data = parse_yaml_to_dict(yaml_file_path)
 
-        # Print the parsed data
-        print("\nParsed YAML Data:")
-        print(parsed_data)
+            # Plot the 'mean' values from the 'lowlevel' field
+            #plot_lowlevel_means(parsed_data)
 
     except Exception as e:
         print(f"Error: {e}")
