@@ -70,6 +70,9 @@ This figure compares manually selected low-level features across the processed a
 - **Dynamic Complexity**: Measures the variation in loudness over time, providing insight into the dynamic range of the audio.
 - **Dissonance**: Quantifies the perceived roughness or harshness of the sound, which can indicate the level of harmonic tension.
 - **ERB Bands Flatness (in dB)**: Represents the flatness of the energy distribution across ERB bands, with higher values indicating a more uniform energy distribution.
+- **Barkbands**: Represents the energy distribution across critical bands of hearing (Bark scale). These bands are useful for analyzing the spectral content of the audio in a way that aligns with human auditory perception.
+- **MFCC (Mel-Frequency Cepstral Coefficients)**: Encodes the spectral shape of the audio signal in a compact form. MFCCs are widely used in audio and speech processing tasks, such as speaker recognition and music classification.
+- **Pitch Salience**: Measures the prominence of the pitch in the audio signal. Higher values indicate a stronger and more defined pitch, which is useful for analyzing tonal clarity and harmonic content.
 
 These features are useful for analyzing the timbre, texture, and dynamic properties of the audio signal.
 

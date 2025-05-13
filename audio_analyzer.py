@@ -563,7 +563,7 @@ def plot_sequence_features(sequence_values, file_names, output_file="sequence_fe
     print(f"Figure saved as '{output_path}'")
     plt.close(fig)  # Close the figure to free memory
 
-def plot_selected_features(data_list, file_names, selected_features, section, output_file="selected_features_comparison.png", columns=6):
+def plot_selected_features(data_list, file_names, selected_features, section, output_file="selected_features_comparison.png", columns=4):
     """
     Plots manually selected features for comparison across files and saves the figure.
 
@@ -572,7 +572,7 @@ def plot_selected_features(data_list, file_names, selected_features, section, ou
     :param selected_features: List of manually selected feature names to plot.
     :param section: The section to extract features from (e.g., 'lowlevel', 'rhythm', 'tonal').
     :param output_file: Name of the output file to save the figure.
-    :param columns: Number of columns in the grid layout (default: 6).
+    :param columns: Number of columns in the grid layout (default: 4).
     """
     feature_values = {feature: [] for feature in selected_features}
 
@@ -721,11 +721,14 @@ if __name__ == "__main__":
             "dissonance.mean",
             "dynamic_complexity",
             "hfc.mean",
+            "pitch_salience.mean",
+            "spectral_spread.mean",
             "spectral_complexity.mean",
             "spectral_rolloff.mean",
             "barkbands_kurtosis.mean",
             "barkbands.mean",
             "erbbands.mean",
+            "erbbands_kurtosis.mean",
             "mfcc.mean",
             "spectral_contrast_valleys.mean",
             "silence_rate_30dB.mean",
@@ -737,6 +740,8 @@ if __name__ == "__main__":
             "bpm",
             "beats_loudness.mean",
             "beats_loudness_band_ratio.mean",
+            "bpm_histogram_first_peak_spread.mean",
+            "bpm_histogram_first_peak_weight.mean",
             "danceability",
             "onset_rate",
         ]
