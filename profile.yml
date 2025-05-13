@@ -1,5 +1,5 @@
 startTime: 0
-endTime: 120
+endTime: 15
 outputFormat: yaml
 lowlevel:
     frameSize: 2048
@@ -10,6 +10,12 @@ lowlevel:
     stats: ["mean", "var", "median"]
 
 average_loudness:
+    frameSize: 88200
+    hopSize: 44100
+    windowType: hann
+    silentFrames: noise
+
+loudness_EBUR_128:
     frameSize: 88200
     hopSize: 44100
     windowType: hann
