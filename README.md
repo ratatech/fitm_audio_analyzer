@@ -102,9 +102,10 @@ This figure compares manually selected tonal features across the processed audio
 
 - **HPCP (Harmonic Pitch Class Profile)**: Represents the harmonic content of the audio, capturing the intensity of each pitch class (e.g., C, C#, D, etc.) in a chromatic scale.
 - **Chords Histogram**: Shows the distribution of detected chords over time, providing insight into the harmonic progression of the audio.
-- **THPCP (Tonal Harmonic Pitch Class Profile)**: A variant of HPCP that includes temporal information, capturing changes in harmonic content over time.
+- **Tuning Frequency**: Represents the estimated tuning frequency of the audio (e.g., 440 Hz for standard A4 tuning). This feature helps identify whether the audio is tuned to a standard tempered scale or deviates from it.
+- **Non-Tempered Energy Ratio**: Measures the proportion of energy in the audio that does not align with the tempered scale. Higher values indicate a greater deviation from the standard tempered tuning, which can be useful for analyzing non-Western music or unconventional tuning systems.
 
-These features are valuable for analyzing the harmonic structure and tonal characteristics of the audio.
+These features are valuable for analyzing the harmonic structure, tonal characteristics, and tuning properties of the audio.
 
 ![Tonal Features](out/manually_selected_tonal_features_comparison.png)
 
