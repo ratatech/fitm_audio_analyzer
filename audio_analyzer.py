@@ -3,6 +3,7 @@ import os
 import yaml  # Import PyYAML for parsing YAML files
 import matplotlib.pyplot as plt
 import numpy as np
+import csv  # Import CSV module for exporting data
 
 
 FEATURES_TO_CONVERT_TO_DB = [
@@ -12,6 +13,8 @@ FEATURES_TO_CONVERT_TO_DB = [
     "melbands.mean",
     "melbands.median",
     "melbands.var",
+    "spectral_energyband_low.mean",
+    "spectral_energyband_middle_low.mean",
     #"beats_loudness.mean",
     # Add more features as needed
 ]
@@ -563,14 +566,14 @@ def plot_sequence_features(sequence_values, file_names, output_file="sequence_fe
     print(f"Figure saved as '{output_path}'")
     plt.close(fig)  # Close the figure to free memory
 
-def plot_selected_features(data_list, file_names, selected_features, section, output_file="selected_features_comparison.png", columns=4):
+def plot_selected_features(data_list, file_names, selected_features, section=None, output_file="selected_features_comparison.png", columns=4):
     """
     Plots manually selected features for comparison across files and saves the figure.
 
     :param data_list: List of parsed YAML data dictionaries.
     :param file_names: List of file names corresponding to the YAML files.
     :param selected_features: List of manually selected feature names to plot.
-    :param section: The section to extract features from (e.g., 'lowlevel', 'rhythm', 'tonal').
+    :param section: The section to extract features from (e.g., 'lowlevel', 'rhythm', 'tonal'). If None, search across all sections.
     :param output_file: Name of the output file to save the figure.
     :param columns: Number of columns in the grid layout (default: 4).
     """
@@ -578,19 +581,28 @@ def plot_selected_features(data_list, file_names, selected_features, section, ou
 
     # Extract values for the selected features
     for data in data_list:
-        if section not in data:
-            raise KeyError(f"The '{section}' field is missing in the YAML data.")
-        section_data = data[section]
+        if section:
+            if section not in data:
+                raise KeyError(f"The '{section}' field is missing in the YAML data.")
+            sections_to_search = [section]
+        else:
+            sections_to_search = ["lowlevel", "rhythm", "tonal"]  # Search across all sections
 
         for feature in selected_features:
-            keys = feature.split(".")  # Handle nested keys
-            value = section_data
-            for key in keys:
-                if isinstance(value, dict) and key in value:
-                    value = value[key]
-                else:
-                    value = None
-                    break
+            value = None
+            for sec in sections_to_search:
+                if sec in data:
+                    section_data = data[sec]
+                    keys = feature.split(".")  # Handle nested keys
+                    value = section_data
+                    for key in keys:
+                        if isinstance(value, dict) and key in value:
+                            value = value[key]
+                        else:
+                            value = None
+                            break
+                    if value is not None:
+                        break  # Stop searching if the feature is found
             feature_values[feature].append(value)
 
     # Plot the selected features
@@ -653,9 +665,71 @@ def plot_selected_features(data_list, file_names, selected_features, section, ou
     print(f"Figure saved as '{output_path}'")
     plt.close(fig)  # Close the figure to free memory
 
+def export_features_to_csv(data_list, file_names, selected_features, output_file="selected_features_global.csv"):
+    """
+    Exports the values of selected features to a CSV file, including descriptions.
+
+    :param data_list: List of parsed YAML data dictionaries.
+    :param file_names: List of file names corresponding to the YAML files.
+    :param selected_features: List of manually selected feature names to export.
+    :param output_file: Name of the output CSV file.
+    """
+    # Feature descriptions
+    feature_descriptions = {
+        "dynamic_complexity": "Measures the variation in loudness over time, reflecting dynamic range.",
+        "spectral_complexity.mean": "Indicates the number of spectral peaks, reflecting timbral richness.",
+        "hfc.mean": "High-frequency content, associated with brightness or sharpness of the sound.",
+        "barkbands_kurtosis.mean": "Kurtosis of Bark bands, reflecting tonal sharpness or flatness.",
+        "erbbands_kurtosis.mean": "Kurtosis of ERB bands, indicating spectral shape characteristics.",
+        "beats_loudness.mean": "Average loudness of beats, reflecting rhythmic intensity.",
+        "danceability": "Measures how suitable the track is for dancing, based on rhythm and tempo.",
+        "tuning_equal_tempered_deviation": "Deviation from equal-tempered tuning, reflecting tuning accuracy.",
+        "bpm": "Beats per minute, indicating the tempo of the track.",
+        "spectral_energyband_low.mean": "Energy in the low-frequency band, reflecting bass presence.",
+        "spectral_energyband_high.mean": "Energy in the high-frequency band, reflecting treble presence.",
+    }
+
+    # Prepare a dictionary to store feature values
+    feature_values = {feature: [] for feature in selected_features}
+
+    # Extract values for the selected features
+    for data, file_name in zip(data_list, file_names):
+        for feature in selected_features:
+            value = None
+            for section in ["lowlevel", "rhythm", "tonal"]:
+                if section in data:
+                    section_data = data[section]
+                    keys = feature.split(".")
+                    value = section_data
+                    for key in keys:
+                        if isinstance(value, dict) and key in value:
+                            value = value[key]
+                        else:
+                            value = None
+                            break
+                    if value is not None:
+                        break  # Stop searching if the feature is found
+            feature_values[feature].append(value)
+
+    # Write to CSV
+    output_path = os.path.join("out", output_file)
+    os.makedirs("out", exist_ok=True)  # Ensure the output directory exists
+    with open(output_path, mode="w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
+        
+        # Write header row with file names
+        writer.writerow(["Feature Name", "Description"] + file_names)
+        
+        # Write each feature, its description, and its values
+        for feature, values in feature_values.items():
+            description = feature_descriptions.get(feature, "No description available.")
+            writer.writerow([feature, description] + values)
+
+    print(f"CSV file with descriptions saved as '{output_path}'")
+
 # Example usage
 if __name__ == "__main__":
-    # try:
+    try:
         samples = os.listdir("samples/")  # List files in the 'samples/' directory
         parsed_data_list = []
         file_names = []
@@ -757,10 +831,38 @@ if __name__ == "__main__":
             "key_scale"
         ]
 
+        selected_features_global = [
+            "dynamic_complexity",
+            "spectral_complexity.mean",
+            "hfc.mean",
+            "barkbands_kurtosis.mean",
+            "erbbands_kurtosis.mean",
+            "beats_loudness.mean",
+            "danceability",
+            "tuning_equal_tempered_deviation",
+            "bpm",
+            "spectral_energyband_low.mean",
+            "spectral_energyband_high.mean",
+        ]
+
+
         # Plot the selected features
         plot_selected_features(parsed_data_list, file_names, selected_features_lowlevel, section="lowlevel", output_file="manually_selected_lowlevel_features_comparison.png")
         plot_selected_features(parsed_data_list, file_names, selected_features_rythm, section="rhythm", output_file="manually_selected_rhythm_features_comparison.png")
         plot_selected_features(parsed_data_list, file_names, selected_features_tonal, section="tonal", output_file="manually_selected_tonal_features_comparison.png")
+        
+        # Plot the selected global features
+        plot_selected_features(
+            parsed_data_list, 
+            file_names, 
+            selected_features_global, 
+            section=None,  # Pass None since features span multiple sections
+            output_file="manually_selected_global_features_comparison.png",
+            columns=3
+        )
+        
+        # Export the selected global features to CSV
+        export_features_to_csv(parsed_data_list, file_names, selected_features_global, output_file="selected_features_global.csv")
 
-    # except Exception as e:
-    #     print(f"Error: {e}")
+    except Exception as e:
+        print(f"Error: {e}")

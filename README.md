@@ -118,7 +118,7 @@ This figure compares manually selected tonal features across the processed audio
 - **Non-Tempered Energy Ratio**: Measures the proportion of energy in the audio that does not align with the tempered scale. Higher values indicate a greater deviation from the standard tempered tuning, which can be useful for analyzing non-Western music or unconventional tuning systems.
 - **Key Key**: Represents the estimated key of the audio (e.g., C, D, E, etc.).
 - **Key Scale**: Represents the estimated scale of the audio (e.g., major or minor).
-- **THPCP (Tonal Harmonic Pitch Class Profile)**: A variant of HPCP that includes temporal information, capturing changes in harmonic content over time.
+- **THPCP (Transposed Harmonic Pitch Class Profile)**: A variant of HPCP that is transposed to align with the detected key of the audio. This ensures that the tonal representation is key-independent, making it useful for comparing harmonic content across different keys.
 
 These features are valuable for analyzing the harmonic structure, tonal characteristics, and tuning properties of the audio.
 

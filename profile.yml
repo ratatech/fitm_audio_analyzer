@@ -28,8 +28,8 @@ rhythm:
     stats: ["mean", "var", "median", "min", "max"]
 
 tonal:
-    frameSize: 4096
-    hopSize: 2048
+    frameSize: 2048
+    hopSize: 1024
     zeroPadding: 0
     windowType: blackmanharris62
     silentFrames: noise
