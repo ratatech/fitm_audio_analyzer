@@ -4,7 +4,15 @@ import yaml  # Import PyYAML for parsing YAML files
 import matplotlib.pyplot as plt
 import numpy as np
 import csv  # Import CSV module for exporting data
+import argparse
 
+# Feature display limits for plotting
+# Define y-limits for specific features to focus on the most relevant regions
+FEATURE_YLIMS = {
+    "bpm": (90, 130),  
+    "spectral_energyband_low.mean": (-25, -10),
+    "spectral_energyband_high.mean": (-40, -25),
+}
 
 FEATURES_TO_CONVERT_TO_DB = [
     "barkbands.mean",
@@ -15,6 +23,7 @@ FEATURES_TO_CONVERT_TO_DB = [
     "melbands.var",
     "spectral_energyband_low.mean",
     "spectral_energyband_middle_low.mean",
+    "spectral_energyband_high.mean",
     #"beats_loudness.mean",
     # Add more features as needed
 ]
@@ -615,8 +624,13 @@ def plot_selected_features(data_list, file_names, selected_features, section=Non
     rows = (num_features + columns - 1) // columns
 
     fig, axes = plt.subplots(rows, columns, figsize=(20, 5 * rows))  # Adjust figure size for better visibility
-    axes = axes.flatten()  # Flatten the axes array for easy iteration
-
+    
+    # Ensure axes is always a flat list
+    if num_features == 1:
+        axes = [axes]
+    else:
+        axes = axes.flatten()  # Flatten the axes array for easy iteration
+    
     # Generate a colormap for the bars
     colors = plt.cm.tab10(range(len(file_names)))  # Use a colormap with enough distinct colors
 
@@ -648,6 +662,10 @@ def plot_selected_features(data_list, file_names, selected_features, section=Non
             ax.set_xticks(range(len(file_names)))
             ax.set_xticklabels(file_names, rotation=45, ha='right', fontsize=10)
 
+        # Set y-limits for specific features if defined
+        if feature in FEATURE_YLIMS:
+            ax.set_ylim(FEATURE_YLIMS[feature])
+
         ax.set_title(f"'{feature}'", fontsize=14)
 
     # Hide unused subplots
@@ -665,14 +683,97 @@ def plot_selected_features(data_list, file_names, selected_features, section=Non
     print(f"Figure saved as '{output_path}'")
     plt.close(fig)  # Close the figure to free memory
 
+def plot_mfcc_means(parsed_data_list, file_names, output_file="mfcc_means_lineplot.png"):
+    """
+    Plots the z-score normalized MFCC mean vectors for each file as lines on the same plot, skipping the first two coefficients.
+    The z-score output is divided by 3 to fit most values in the range [-1, 1].
+    """
+    plt.figure(figsize=(10, 6))
+    for data, name in zip(parsed_data_list, file_names):
+        mfcc_mean = None
+        if "lowlevel" in data and "mfcc" in data["lowlevel"] and "mean" in data["lowlevel"]["mfcc"]:
+            mfcc_mean = data["lowlevel"]["mfcc"]["mean"]
+        if mfcc_mean is not None and len(mfcc_mean) > 2:
+            mfcc_vals = np.array(mfcc_mean[2:])  # Skip mfcc[0] and mfcc[1]
+            mean = np.mean(mfcc_vals)
+            std = np.std(mfcc_vals)
+            if std > 1e-10:
+                normed = (mfcc_vals - mean) / std / 3  # Divide by 3 to scale to ~[-1, 1]
+            else:
+                normed = np.zeros_like(mfcc_vals)
+            plt.plot(range(2, len(mfcc_mean)), normed, marker='o', label=name)
+    plt.xlabel("MFCC Coefficient Index (starting from 2)")
+    plt.ylabel("Normalized Value (z-score / 3)")
+    plt.title("Z-score Normalized MFCC Mean Vectors (excluding MFCC[0] and MFCC[1]), scaled to ~[-1, 1]")
+    plt.legend(fontsize=8)
+    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+    plt.tight_layout()
+    os.makedirs("out", exist_ok=True)
+    plt.savefig(os.path.join("out", output_file), dpi=300)
+    plt.close()
+    print(f"Figure saved as 'out/{output_file}'")
+
+
+def plot_11_point_polygon(values, title="11-Point Polygon", output_file="11_point_polygon.png"):
+    """
+    Plots a polygon formed by 11 points (e.g., for visualizing MFCCs 2-12).
+    Maps values from [-1, 1] to [0, 1] for the radius so that 0 is at the middle of the circle.
+    :param values: List or array of 11 values.
+    :param title: Title of the plot.
+    :param output_file: Output filename.
+    """
+    if len(values) != 11:
+        raise ValueError("Input must be a list or array of 11 values.")
+
+    # Map values from [-1, 1] to [0, 1] for the radius
+    radii = 0.5 * (np.array(values) + 1)
+    radii = np.append(radii, radii[0])  # Close the polygon
+
+    # Calculate angles for 11 points around a circle
+    angles = np.linspace(0, 2 * np.pi, 12)  # 12 to close the polygon
+
+    # Plot
+    fig, ax = plt.subplots(subplot_kw={'polar': True})
+    ax.plot(angles, radii, marker='o')
+    ax.fill(angles, radii, alpha=0.25)
+    ax.set_xticks(np.linspace(0, 2 * np.pi, 11, endpoint=False))
+    ax.set_xticklabels([str(i+2) for i in range(11)])  # Label as MFCC 2-12
+    ax.set_title(title)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_file), dpi=300)
+    plt.close()
+    print(f"Figure saved as 'out/{output_file}'")
+
+def plot_mfcc_polygon_for_each_file(parsed_data_list, file_names, output_dir="out"):
+    """
+    For each file, plot an 11-point polygon using the z-score normalized MFCC mean coefficients 2-12,
+    scaled to ~[-1, 1] by dividing by 3.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    for data, name in zip(parsed_data_list, file_names):
+        mfcc_mean = None
+        if "lowlevel" in data and "mfcc" in data["lowlevel"] and "mean" in data["lowlevel"]["mfcc"]:
+            mfcc_mean = data["lowlevel"]["mfcc"]["mean"]
+
+        if mfcc_mean is not None and len(mfcc_mean) > 12:
+            mfcc_vals = np.array(mfcc_mean[2:13])  # Coefficients 2-12 (11 values)
+            mean = np.mean(mfcc_vals)
+            std = np.std(mfcc_vals)
+            if std > 1e-10:
+                normed = (mfcc_vals - mean) / std / 3  # Z-score, then scale to ~[-1, 1]
+            else:
+                normed = np.zeros_like(mfcc_vals)
+
+            plot_11_point_polygon(
+                normed,
+                title=f"MFCC Polygon: {name}",
+                output_file=f"{output_dir}/mfcc_polygon_{os.path.splitext(name)[0]}.png"
+            )
+
 def export_features_to_csv(data_list, file_names, selected_features, output_file="selected_features_global.csv"):
     """
-    Exports the values of selected features to a CSV file, including descriptions.
-
-    :param data_list: List of parsed YAML data dictionaries.
-    :param file_names: List of file names corresponding to the YAML files.
-    :param selected_features: List of manually selected feature names to export.
-    :param output_file: Name of the output CSV file.
+    Exports the values of selected features to a CSV file, including descriptions,
+    11 normalized MFCC coefficients (2-12), and their mapped values for circle plotting.
     """
     # Feature descriptions
     feature_descriptions = {
@@ -688,12 +789,23 @@ def export_features_to_csv(data_list, file_names, selected_features, output_file
         "spectral_energyband_low.mean": "Energy in the low-frequency band, reflecting bass presence.",
         "spectral_energyband_high.mean": "Energy in the high-frequency band, reflecting treble presence.",
     }
+    # Add descriptions for normalized MFCCs 2-12
+    mfcc_normed_labels = [f"mfcc_normed_{i}" for i in range(2, 13)]
+    for i in range(2, 13):
+        feature_descriptions[f"mfcc_normed_{i}"] = f"Z-score normalized and scaled MFCC coefficient {i} (mean/std/3) from the mean vector, reflects spectral envelope shape."
+    # Add descriptions for mapped MFCCs 2-12 (for circle plotting)
+    mfcc_circle_labels = [f"mfcc_circle_{i}" for i in range(2, 13)]
+    for i in range(2, 13):
+        feature_descriptions[f"mfcc_circle_{i}"] = f"Mapped (0.5*(x+1)) z-score normalized MFCC coefficient {i} for circle plotting."
 
-    # Prepare a dictionary to store feature values
+     # Prepare a dictionary to store feature values
     feature_values = {feature: [] for feature in selected_features}
 
-    # Extract values for the selected features
+    # Extract values for the selected features and normalized MFCCs
+    rows = []
     for data, file_name in zip(data_list, file_names):
+        row = {"File Name": file_name}
+        # Extract selected features
         for feature in selected_features:
             value = None
             for section in ["lowlevel", "rhythm", "tonal"]:
@@ -709,27 +821,55 @@ def export_features_to_csv(data_list, file_names, selected_features, output_file
                             break
                     if value is not None:
                         break  # Stop searching if the feature is found
-            feature_values[feature].append(value)
+            # Convert to dB if needed
+            if feature in FEATURES_TO_CONVERT_TO_DB and value is not None:
+                if isinstance(value, list):
+                    value = lin2Db(value)
+                else:
+                    value = lin2Db([value])[0]
+            row[feature] = value
 
-    # Write to CSV
+        # Extract and normalize MFCC[2:13] for circle plotting
+        mfcc_circle = [None] * 11
+        if "lowlevel" in data and "mfcc" in data["lowlevel"] and "mean" in data["lowlevel"]["mfcc"]:
+            mfcc_mean = data["lowlevel"]["mfcc"]["mean"]
+            if mfcc_mean is not None and len(mfcc_mean) > 12:
+                mfcc_vals = np.array(mfcc_mean[2:13])  # Coefficients 2-12 (11 values)
+                mean = np.mean(mfcc_vals)
+                std = np.std(mfcc_vals)
+                if std > 1e-10:
+                    mfcc_normed = ((mfcc_vals - mean) / std / 3)
+                    mfcc_circle = (0.5 * (mfcc_normed + 1)).tolist()
+                else:
+                    mfcc_circle = [0.5] * 11
+        for i, val in enumerate(mfcc_circle):
+            row[f"mfcc_circle_{i+2}"] = val
+
+        rows.append(row)
+
+    # Write to CSV (transposed format with descriptions)
     output_path = os.path.join("out", output_file)
     os.makedirs("out", exist_ok=True)  # Ensure the output directory exists
+    fieldnames = ["File Name"] + selected_features + [f"mfcc_circle_{i}" for i in range(2, 13)]
     with open(output_path, mode="w", newline="", encoding="utf-8") as csv_file:
         writer = csv.writer(csv_file)
-        
-        # Write header row with file names
+        # Write header row: feature name, description, then one column per file
         writer.writerow(["Feature Name", "Description"] + file_names)
-        
-        # Write each feature, its description, and its values
-        for feature, values in feature_values.items():
+        # Write each feature and its values
+        for feature in selected_features + [f"mfcc_circle_{i}" for i in range(2, 13)]:
             description = feature_descriptions.get(feature, "No description available.")
+            values = [row.get(feature, "") for row in rows]
             writer.writerow([feature, description] + values)
 
-    print(f"CSV file with descriptions saved as '{output_path}'")
+    print(f"CSV file with descriptions and mapped circle values saved as '{output_path}'")
 
 # Example usage
 if __name__ == "__main__":
     try:
+        parser = argparse.ArgumentParser(description="Audio feature analysis")
+        parser.add_argument("--skip-extraction", action="store_true", help="Skip feature extraction step")
+        args = parser.parse_args()
+
         samples = os.listdir("samples/")  # List files in the 'samples/' directory
         parsed_data_list = []
         file_names = []
@@ -741,8 +881,9 @@ if __name__ == "__main__":
                 arg2 = os.path.join("out", f"data_{sample.split('.wav')[0]}_raw.yml")
                 arg3 = "profile.yml"
 
-                # Call the executable
-                call_executable_with_args_realtime(bin, arg1, arg2, arg3)
+                if not args.skip_extraction:
+                    # Call the executable
+                    call_executable_with_args_realtime(bin, arg1, arg2, arg3)
 
                 # Parse the output YAML file
                 yaml_file_path = arg2
@@ -860,7 +1001,13 @@ if __name__ == "__main__":
             output_file="manually_selected_global_features_comparison.png",
             columns=3
         )
-        
+
+        # Plot the z-score normalized MFCC mean vectors for each file
+        plot_mfcc_means(parsed_data_list, file_names, output_file="mfcc_means_lineplot.png")
+
+        # Plot the 11-point polygons for each file using the z-score normalized MFCC mean coefficients
+        plot_mfcc_polygon_for_each_file(parsed_data_list, file_names)
+
         # Export the selected global features to CSV
         export_features_to_csv(parsed_data_list, file_names, selected_features_global, output_file="selected_features_global.csv")
 
